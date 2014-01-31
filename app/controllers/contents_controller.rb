@@ -6,14 +6,18 @@ class ContentsController < ApplicationController
   end
 
   def auth
-    key = params.fetch(:your_consumer_key)
-    secret = params.fetch(:your_consumer_secret)
-    key = MY_CONSUMER_KEY if Rails.env == "development"
-    secret = MY_CONSUMER_SECRET if Rails.env == "development"
+    @key = params.fetch(:your_consumer_key)
+    @secret = params.fetch(:your_consumer_secret)
 
-    render :text => "error" and return if secret.blank?
+    @key = MY_CONSUMER_KEY if Rails.env == "development"
+    @secret = MY_CONSUMER_SECRET if Rails.env == "development"
 
-    @consumer = OAuth::Consumer.new(key, secret, { :site => "http://www.tumblr.com" })
+    render :text => "error" and return if @secret.blank?
+
+    session[:key] = @key
+    session[:secret] = @secret
+
+    @consumer = OAuth::Consumer.new(@key, @secret, { :site => "http://www.tumblr.com" })
     callback_url = "#{request.protocol + request.host_with_port}/contents/entry"
     @request_token = @consumer.get_request_token(:exclude_callback => true, :oauth_callback => callback_url)
     @request_token.authorize_url
@@ -27,7 +31,17 @@ class ContentsController < ApplicationController
     access_token = session[:request_token].get_access_token(:oauth_verifier => oauth_verifier)
 
     response = access_token.get('http://api.tumblr.com/v2/user/dashboard')
-    @result = JSON.parse(response.body)
+    render :json => JSON.parse(response.body) and return
+    posts = JSON.parse(response.body)["response"]["psts"]
+    @reblog_names = posts.collect { |p| p["post_author"] }
+    @reblog_names.uniq!
+    
+    begin 
+      test_person = @reblog_names.first
+      access_token.post('http://api.tumblr.com/v2/user/follow', { :url => test_person})
+    rescue => e
+      render :text => e
+    end
   end
 
 

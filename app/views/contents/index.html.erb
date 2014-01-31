@@ -1,7 +1,7 @@
 <%= form_tag action: "auth" do %>
   コンシューマーkeyを入れる
-  <%= text_field_tag :your_consumer_key, nil %>
+  <%= text_field_tag :your_consumer_key,  session[:key] %>
   コンシューマーsecretを入れる
-  <%= text_field_tag :your_consumer_secret, nil %>
+  <%= text_field_tag :your_consumer_secret,  session[:secret] %>
   <%= submit_tag "始める" %>
 <% end %>

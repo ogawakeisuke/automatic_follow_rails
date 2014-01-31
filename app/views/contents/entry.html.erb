@@ -1,7 +1,5 @@
-<%= @result.to_yaml %>
+<% @blog_names.each do |b| %>
+  <p><%= b %> </p>
+<% end %>
 
-
-<script>
-
-
-</script>
+<%= link_to "最初から", root_path %>
