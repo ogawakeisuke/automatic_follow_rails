@@ -17,6 +17,7 @@ class ContentsController < ApplicationController
     session[:key] = @key
     session[:secret] = @secret
 
+
     @consumer = OAuth::Consumer.new(@key, @secret, { :site => "http://www.tumblr.com" })
     callback_url = "#{request.protocol + request.host_with_port}/contents/entry"
     @request_token = @consumer.get_request_token(:exclude_callback => true, :oauth_callback => callback_url)
@@ -30,42 +31,17 @@ class ContentsController < ApplicationController
     oauth_verifier = params.fetch(:oauth_verifier)
     access_token = session[:request_token].get_access_token(:oauth_verifier => oauth_verifier)
 
-    response = access_token.get('http://api.tumblr.com/v2/user/dashboard')
-    render :json => JSON.parse(response.body) and return
-    posts = JSON.parse(response.body)["response"]["psts"]
-    @reblog_names = posts.collect { |p| p["post_author"] }
-    @reblog_names.uniq!
+    response = access_token.get('http://api.tumblr.com/v2/user/dashboard?reblog_info=true')
+    posts = JSON.parse(response.body)["response"]["posts"]
     
-    begin 
-      test_person = @reblog_names.first
-      access_token.post('http://api.tumblr.com/v2/user/follow', { :url => test_person})
-    rescue => e
-      render :text => e
+    @reblog_names = posts.collect { |p| p["reblogged_from_name"] }
+    @reblog_names.compact!.uniq!
+
+
+    @reblog_names.each do |reblog|
+      access_token.post('http://api.tumblr.com/v2/user/follow', { :url => "http://#{reblog}.tumblr.com"})
     end
   end
-
-
-
-private
-
-
-  # def result
-  #   escape_word =  URI.encode(input_word)    
-  #   url= "http://api.tumblr.com/v2/tagged?tag=#{escape_word}&api_key=#{api_key}"
-  
-  #   uri = URI.parse(url).read
-  #   res = JSON.parse(uri)
-
-  #   responses = res["response"]
-  #   @input_word = input_word
-  #   @img_urls = []
-  #   responses.each do |response|
-  #     next unless response["photos"]
-  #     @img_urls << response["photos"].first["original_size"]["url"]
-  #   end
-
-  #   render :pdf  => input_word, :layout => 'pdf', :encoding => 'UTF-8'
-  # end
 
 end
 
