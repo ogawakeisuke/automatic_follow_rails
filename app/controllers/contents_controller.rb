@@ -34,9 +34,12 @@ class ContentsController < ApplicationController
     response = access_token.get('http://api.tumblr.com/v2/user/dashboard?reblog_info=true')
     posts = JSON.parse(response.body)["response"]["posts"]
     
-    @reblog_names = posts.collect { |p| p["reblogged_from_name"] }
+    @reblog_names = []
+    posts.each do |p| 
+      @reblog_names << p["reblogged_from_name"] 
+      @reblog_names << p["reblogged_root_name"] 
+    end    
     @reblog_names.compact!.uniq!
-
 
     @reblog_names.each do |reblog|
       access_token.post('http://api.tumblr.com/v2/user/follow', { :url => "http://#{reblog}.tumblr.com"})
